@@ -1,0 +1,14 @@
+app_name: bentopdf
+
+container:
+  registry: "ghcr.io/"
+  image: alam00000/bentopdf-simple
+  tag: latest
+
+
+route:
+  hostnames: 
+    - ""
+  parent_refs:
+    - name: ""
+      namespace: ""
