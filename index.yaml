@@ -3,6 +3,16 @@ entries:
   bentopdf:
   - apiVersion: v2
     appVersion: latest
+    created: "2026-06-01T07:10:10.152581297Z"
+    description: A simple, privacy-first PDF toolkit.
+    digest: 98939d5186c21b9c8e41abfd2d49330a45e974c72f4c37fa86016115620dba7d
+    name: bentopdf
+    type: application
+    urls:
+    - https://github.com/javsanpae/helm-charts/releases/download/bentopdf-0.1.1/bentopdf-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: latest
     created: "2026-05-31T20:05:45.205641367Z"
     description: A simple, privacy-first PDF toolkit.
     digest: 6606b4e48062355c61a77379db8e508445dd610a133a18759a90d87c1aed8db3
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://github.com/javsanpae/helm-charts/releases/download/bentopdf-0.1.0/bentopdf-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-31T20:05:45.205646056Z"
+generated: "2026-06-01T07:10:10.152595273Z"
