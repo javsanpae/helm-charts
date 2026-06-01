@@ -1,3 +1,4 @@
+{{- if .Values.route.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -5,14 +6,16 @@ metadata:
   namespace: {{ .Values.app_name }}
 spec:
   parentRefs:
-  {{ - range .Values.route.parent_refs }}
-  - {{ . }}
-  {{ - end }}
+{{- range .Values.route.parent_refs }}
+    - name: {{ .name }}
+      namespace: {{ .namespace }}
+{{- end }}
   hostnames:
-  {{- range .Values.route.hostnames }}
-  - {{ . }}
-  {{- end }}
+{{- range .Values.route.hostnames }}
+    - {{ . }}
+{{- end }}
   rules:
-  - backendRefs:
-    - name: {{ .Values.app_name }}-web-svc
-      port: 80
+    - backendRefs:
+        - name: {{ .Values.app_name }}-web-svc
+          port: 80
+{{- end }}
