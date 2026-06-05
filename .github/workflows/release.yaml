@@ -21,6 +21,18 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
+      - name: Add Helm repositories
+        run: |
+          helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+          helm repo add ot-container-kit https://ot-container-kit.github.io/helm-charts
+          helm repo update
+
+      - name: Update Helm dependencies
+        run: |
+          for chart in charts/*/; do
+            helm dependency update "$chart"
+          done
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.7.0
         env:
