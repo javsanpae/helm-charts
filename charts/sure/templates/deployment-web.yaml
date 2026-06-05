@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app_name }}-web
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.app_name }}
+      app.kubernetes.io/component: web
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.app_name }}
+        app.kubernetes.io/component: web
+    spec:
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        nameservers: {{- range .Values.dns }}
+          - {{ . | quote }}
+        {{- end }}
+      containers:
+        - name: {{ .Values.app_name }}
+          image: {{ .Values.container.registry }}{{ .Values.container.image }}:{{ .Values.container.tag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.web.port }}
+              name: http
+              protocol: TCP
+          env:
+            - name: RAILS_ENV
+              value: production
+            - name: RAILS_LOG_TO_STDOUT
+              value: "true"
+            - name: RAILS_SERVE_STATIC_FILES
+              value: "true"
+            - name: DATABASE_URL
+              {{- if .Values.postgresql.external }}
+              value: postgresql://{{ .Values.postgresql.username }}:$(POSTGRES_PASSWORD)@{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}
+              {{- else }}
+              value: postgresql://{{ .Values.postgresql.username }}:$(POSTGRES_PASSWORD)@{{ .Values.postgresql.bundled.primary.host }}:5432/{{ .Values.postgresql.database }}
+              {{- end }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.external | ternary .Values.postgresql.passwordSecret (printf "%s-db" .Values.app_name) }}
+                  key: {{ .Values.postgresql.external | ternary .Values.postgresql.passwordSecretKey "POSTGRES_PASSWORD" }}
+            - name: REDIS_URL
+              {{- if .Values.redis.external }}
+              value: {{ .Values.redis.url | quote }}
+              {{- else }}
+              value: redis://{{ .Values.redis.bundled.primary.host }}:6379
+              {{- end }}
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.app_secret.secretKeyBase.secretName | default (printf "%s-secret-key" .Values.app_name) }}
+                  key: {{ .Values.app_secret.secretKeyBase.secretKey | default "secret-key-base" }}
+            - name: APP_HOST
+              value: {{ .Values.web.binding | default "0.0.0.0" }}
+            - name: APP_PORT
+              value: {{ .Values.web.port | default 3000 | quote }}
+          {{- if .Values.web.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.web.port }}
+            initialDelaySeconds: {{ .Values.web.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.web.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.web.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.web.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.web.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.web.port }}
+            initialDelaySeconds: {{ .Values.web.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.web.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.web.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.web.readinessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          {{- if .Values.web.securityContext }}
+          securityContext:
+            {{- toYaml .Values.web.securityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.appStorage.enabled }}
+          volumeMounts:
+            - name: app-storage
+              mountPath: /app/storage
+          {{- end }}
+      {{- if .Values.appStorage.enabled }}
+      volumes:
+        - name: app-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.app_name }}-storage
+      {{- end }}

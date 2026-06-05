@@ -1,16 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "sure.fullname" . }}
+  name: {{ .Values.app_name }}
+  namespace: {{ .Values.namespace }}
   labels:
-    {{- include "sure.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ .Values.app_name }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.service.type }}
-  selector:
-    app.kubernetes.io/component: web
-    {{- include "sure.selectorLabels" . | nindent 4 }}
   ports:
-    - name: http
-      port: {{ .Values.service.port }}
-      targetPort: http
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/component: web

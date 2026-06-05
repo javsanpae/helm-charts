@@ -1,0 +1,18 @@
+{{- if and .Values.appStorage.enabled (not .Values.appStorage.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.app_name }}-storage
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+spec:
+  accessModes:
+    {{- toYaml .Values.appStorage.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.appStorage.size }}
+  {{- if .Values.appStorage.storageClassName }}
+  storageClassName: {{ .Values.appStorage.storageClassName }}
+  {{- end }}
+{{- end }}

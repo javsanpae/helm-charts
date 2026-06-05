@@ -1,0 +1,59 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.app_name }}-backup
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: backup
+              image: {{ .Values.backup.image }}
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.passwordSecret | default (printf "%s-backup-db" .Values.app_name) }}
+                      key: {{ .Values.backup.passwordSecretKey | default "POSTGRES_PASSWORD" }}
+                - name: PGHOST
+                  value: {{ .Values.postgresql.bundled.primary.host }}
+                - name: PGPORT
+                  value: "5432"
+                - name: PGUSER
+                  value: {{ .Values.postgresql.username }}
+                - name: PGDATABASE
+                  value: {{ .Values.postgresql.database }}
+                - name: PGHOST_AUTH_METHOD
+                  value: "scram-sha-256"
+                - name: BACKUP_DIR
+                  value: {{ .Values.backup.mountPath }}
+              volumeMounts:
+                - name: backup-volume
+                  mountPath: {{ .Values.backup.mountPath }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  TIMESTAMP=$(date +%Y%m%d%H%M%S)
+                  BACKUP_FILE="${BACKUP_DIR}/${PGDATABASE}_${TIMESTAMP}.sql"
+                  pg_dump -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" --no-password -F c -f "$BACKUP_FILE"
+                  echo "Backup completed: $BACKUP_FILE"
+                  # Cleanup backups older than retention period
+                  find "$BACKUP_DIR" -name "*.sql" -type f -mtime +{{ .Values.backup.retentionDays }} -delete
+                  echo "Old backups cleaned up"
+          volumes:
+            - name: backup-volume
+              persistentVolumeClaim:
+                claimName: {{ .Values.app_name }}-pvc
+{{- end }}
