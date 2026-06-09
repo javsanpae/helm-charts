@@ -1,0 +1,102 @@
+{{- if and (not .Values.redis.external) .Values.redis.bundled.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app_name }}-redis
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.app_name }}
+      app.kubernetes.io/component: redis
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.app_name }}
+        app.kubernetes.io/component: redis
+    spec:
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        nameservers: {{- range .Values.dns }}
+          - {{ . | quote }}
+        {{- end }}
+      containers:
+        - name: {{ .Values.app_name }}-redis
+          image: {{ .Values.redis.bundled.image.registry }}/{{ .Values.redis.bundled.image.repository }}:{{ .Values.redis.bundled.image.tag }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--requirepass"
+            - {{ .Values.redis.bundled.primary.password | default "" | quote }}
+          ports:
+            - containerPort: {{ .Values.redis.bundled.primary.port }}
+              name: redis
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              value: {{ .Values.redis.bundled.primary.password | default "" | quote }}
+          {{- if .Values.redis.bundled.primary.password }}
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - $(REDIS_PASSWORD)
+                - ping
+            initialDelaySeconds: {{ .Values.redis.bundled.healthCheck.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.redis.bundled.healthCheck.interval }}
+            timeoutSeconds: {{ .Values.redis.bundled.healthCheck.timeout }}
+            failureThreshold: {{ .Values.redis.bundled.healthCheck.retries }}
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - $(REDIS_PASSWORD)
+                - ping
+            initialDelaySeconds: {{ .Values.redis.bundled.healthCheck.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.redis.bundled.healthCheck.interval }}
+            timeoutSeconds: {{ .Values.redis.bundled.healthCheck.timeout }}
+            failureThreshold: {{ .Values.redis.bundled.healthCheck.retries }}
+          {{- else }}
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: {{ .Values.redis.bundled.healthCheck.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.redis.bundled.healthCheck.interval }}
+            timeoutSeconds: {{ .Values.redis.bundled.healthCheck.timeout }}
+            failureThreshold: {{ .Values.redis.bundled.healthCheck.retries }}
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: {{ .Values.redis.bundled.healthCheck.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.redis.bundled.healthCheck.interval }}
+            timeoutSeconds: {{ .Values.redis.bundled.healthCheck.timeout }}
+            failureThreshold: {{ .Values.redis.bundled.healthCheck.retries }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.redis.bundled.primary.resources | nindent 12 }}
+          {{- if .Values.redis.bundled.primary.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          {{- end }}
+      {{- if .Values.redis.bundled.primary.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.app_name }}-redis
+      {{- end }}
+{{- end }}

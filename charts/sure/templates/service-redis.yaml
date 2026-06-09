@@ -1,0 +1,20 @@
+{{- if and (not .Values.redis.external) .Values.redis.bundled.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app_name }}-redis
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.redis.bundled.primary.port }}
+      targetPort: redis
+      protocol: TCP
+      name: redis
+  selector:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/component: redis
+{{- end }}

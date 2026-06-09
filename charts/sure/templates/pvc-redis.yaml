@@ -1,0 +1,19 @@
+{{- if and (not .Values.redis.external) .Values.redis.bundled.enabled .Values.redis.bundled.primary.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.app_name }}-redis
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app_name }}
+    app.kubernetes.io/component: redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.redis.bundled.primary.persistence.size }}
+  {{- if .Values.redis.bundled.primary.persistence.storageClass }}
+  storageClassName: {{ .Values.redis.bundled.primary.persistence.storageClass }}
+  {{- end }}
+{{- end }}

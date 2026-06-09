@@ -103,16 +103,20 @@ redis:
   external: false
   # ---- External Redis (set when redis.external = true) ----
   url: ""
-  # ---- Bundled Redis (set when redis.external = false) ----
+  # ---- Bundled Redis (set when redis.external = false and redis.bundled.enabled = true) ----
   bundled:
+    enabled: true
     image:
       registry: docker.io
       repository: library/redis
-      tag: latest
+      tag: "7"
     primary:
+      port: 6379
+      password: ""
       persistence:
         enabled: true
         size: 1Gi
+      resources: {}
     healthCheck:
       interval: 5
       timeout: 5

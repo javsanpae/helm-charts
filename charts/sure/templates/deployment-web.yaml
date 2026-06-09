@@ -57,8 +57,23 @@ spec:
             - name: REDIS_URL
               {{- if .Values.redis.external }}
               value: {{ .Values.redis.url | quote }}
+              {{- else if .Values.redis.bundled.enabled }}
+              {{- if .Values.redis.bundled.primary.password }}
+              value: redis://:{{ .Values.redis.bundled.primary.password }}@{{ .Values.app_name }}-redis:{{ .Values.redis.bundled.primary.port }}/0
               {{- else }}
-              value: redis://{{ .Values.redis.bundled.primary.host }}:6379
+              value: redis://{{ .Values.app_name }}-redis:{{ .Values.redis.bundled.primary.port }}/0
+              {{- end }}
+              {{- end }}
+            - name: REDIS_PASSWORD
+              {{- if .Values.redis.external }}
+              value: ""
+              {{- else if .Values.redis.bundled.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.app_name }}-redis
+                  key: REDIS_PASSWORD
+              {{- else }}
+              value: ""
               {{- end }}
             - name: SECRET_KEY_BASE
               valueFrom:
