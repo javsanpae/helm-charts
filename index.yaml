@@ -68,6 +68,16 @@ entries:
     version: 0.7.1
   - apiVersion: v2
     appVersion: stable
+    created: "2026-06-09T17:01:11.863142509Z"
+    description: A Helm chart for Sure - self-hosted budget management tool.
+    digest: 5dbc68afbb7d5fd3f9c96c7d83506c1a838adfc6e24b291a74f1adf8bb0757e6
+    name: sure
+    type: application
+    urls:
+    - https://github.com/javsanpae/helm-charts/releases/download/sure-0.2.0/sure-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
+    appVersion: stable
     created: "2026-06-09T12:34:30.492965035Z"
     description: A Helm chart for Sure - self-hosted budget management tool.
     digest: 318b8db619545a6a7fc9e46ff99a4d619a22c814b46e24682cd2226116ec0eb9
@@ -86,4 +96,4 @@ entries:
     urls:
     - https://github.com/javsanpae/helm-charts/releases/download/sure-0.1.0/sure-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-09T12:34:30.492979712Z"
+generated: "2026-06-09T17:01:11.863161635Z"
