@@ -39,7 +39,12 @@ spec:
             - name: RAILS_LOG_TO_STDOUT
               value: "true"
             - name: DATABASE_URL
-              {{- if .Values.postgresql.external }}
+              {{- if .Values.postgresql.databaseURLSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.databaseURLSecret }}
+                  key: {{ .Values.postgresql.databaseURLSecretKey | default "database-url" }}
+              {{- else if .Values.postgresql.external }}
               value: postgresql://{{ .Values.postgresql.username }}:$(POSTGRES_PASSWORD)@{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}
               {{- else }}
               value: postgresql://{{ .Values.postgresql.username }}:$(POSTGRES_PASSWORD)@{{ .Values.postgresql.bundled.primary.host }}:5432/{{ .Values.postgresql.database }}

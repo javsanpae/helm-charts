@@ -76,6 +76,9 @@ postgresql:
   username: sure_user
   passwordSecret: ""
   passwordSecretKey: "password"
+  # When set, DATABASE_URL is read from this secret instead of being constructed
+  databaseURLSecret: ""
+  databaseURLSecretKey: "database-url"
   # ---- Bundled PostgreSQL (set when postgresql.external = false) ----
   bundled:
     image:
