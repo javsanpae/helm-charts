@@ -4,8 +4,8 @@ metadata:
   name: {{ .Values.app_name }}-config
   namespace: {{ .Values.namespace }}
 data:
-  DATABASE_URL: {{ .Values.postgresql.external | ternary .Values.postgresql.host .Values.postgresql.bundled.primary.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}
-  REDIS_URL: {{ .Values.redis.external | ternary .Values.redis.url .Values.redis.bundled.primary.host }}
+  DATABASE_URL: {{ .Values.postgresql.external | ternary .Values.postgresql.host (tpl .Values.postgresql.bundled.primary.host .) }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}
+  REDIS_URL: {{ .Values.redis.host | default (.Values.redis.external | ternary .Values.redis.url (tpl .Values.redis.bundled.primary.host .)) }}
   APP_HOST: {{ .Values.web.binding | default "0.0.0.0" }}
   APP_PORT: {{ .Values.web.port | default 3000 | quote }}
   RAILS_ENV: production

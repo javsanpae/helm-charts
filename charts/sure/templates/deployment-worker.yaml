@@ -50,10 +50,12 @@ spec:
                   name: {{ .Values.postgresql.passwordSecret }}
                   key: {{ .Values.postgresql.passwordSecretKey | default "password" }}
             - name: REDIS_URL
-              {{- if .Values.redis.external }}
+              {{- if .Values.redis.host }}
+              value: redis://{{ .Values.redis.host }}:{{ .Values.redis.bundled.primary.port }}/0
+              {{- else if .Values.redis.external }}
               value: {{ .Values.redis.url | quote }}
               {{- else if .Values.redis.bundled.enabled }}
-              value: redis://{{ .Values.app_name }}-redis:{{ .Values.redis.bundled.primary.port }}/0
+              value: redis://{{ tpl .Values.redis.bundled.primary.host . }}:{{ .Values.redis.bundled.primary.port }}/0
               {{- end }}
             - name: SECRET_KEY_BASE
               valueFrom:

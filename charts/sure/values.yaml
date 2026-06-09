@@ -100,9 +100,10 @@ postgresql:
 # Set external=false to deploy the bundled Redis chart.
 redis:
   external: false
+  host: ""
   # ---- External Redis (set when redis.external = true) ----
-  url: ""
-  passwordSecret: ""
+  url: "sure-redis.sure.svc.cluster.local"
+  passwordSecret: "sure-redisdb-credentials"
   passwordSecretKey: "REDIS_PASSWORD"
   # ---- Bundled Redis (set when redis.external = false and redis.bundled.enabled = true) ----
   bundled:
