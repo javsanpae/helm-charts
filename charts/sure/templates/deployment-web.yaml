@@ -52,33 +52,33 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.postgresql.external | ternary .Values.postgresql.passwordSecret (printf "%s-db" .Values.app_name) }}
-                  key: {{ .Values.postgresql.external | ternary .Values.postgresql.passwordSecretKey "POSTGRES_PASSWORD" }}
+                  name: {{ .Values.postgresql.passwordSecret }}
+                  key: {{ .Values.postgresql.passwordSecretKey | default "password" }}
             - name: REDIS_URL
               {{- if .Values.redis.external }}
               value: {{ .Values.redis.url | quote }}
               {{- else if .Values.redis.bundled.enabled }}
-              {{- if .Values.redis.bundled.primary.password }}
-              value: redis://:{{ .Values.redis.bundled.primary.password }}@{{ .Values.app_name }}-redis:{{ .Values.redis.bundled.primary.port }}/0
-              {{- else }}
               value: redis://{{ .Values.app_name }}-redis:{{ .Values.redis.bundled.primary.port }}/0
-              {{- end }}
               {{- end }}
             - name: REDIS_PASSWORD
               {{- if .Values.redis.external }}
               value: ""
               {{- else if .Values.redis.bundled.enabled }}
+              {{- if .Values.redis.passwordSecret }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.app_name }}-redis
-                  key: REDIS_PASSWORD
+                  name: {{ .Values.redis.passwordSecret }}
+                  key: {{ .Values.redis.passwordSecretKey | default "REDIS_PASSWORD" }}
+              {{- else }}
+              value: ""
+              {{- end }}
               {{- else }}
               value: ""
               {{- end }}
             - name: SECRET_KEY_BASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.app_secret.secretKeyBase.secretName | default (printf "%s-secret-key" .Values.app_name) }}
+                  name: {{ .Values.app_secret.secretKeyBase.secretName }}
                   key: {{ .Values.app_secret.secretKeyBase.secretKey | default "secret-key-base" }}
             - name: APP_HOST
               value: {{ .Values.web.binding | default "0.0.0.0" }}

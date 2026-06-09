@@ -47,18 +47,18 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.postgresql.external | ternary .Values.postgresql.passwordSecret (printf "%s-db" .Values.app_name) }}
-                  key: {{ .Values.postgresql.external | ternary .Values.postgresql.passwordSecretKey "POSTGRES_PASSWORD" }}
+                  name: {{ .Values.postgresql.passwordSecret }}
+                  key: {{ .Values.postgresql.passwordSecretKey | default "password" }}
             - name: REDIS_URL
               {{- if .Values.redis.external }}
               value: {{ .Values.redis.url | quote }}
-              {{- else }}
-              value: redis://{{ .Values.redis.bundled.primary.host }}:6379
+              {{- else if .Values.redis.bundled.enabled }}
+              value: redis://{{ .Values.app_name }}-redis:{{ .Values.redis.bundled.primary.port }}/0
               {{- end }}
             - name: SECRET_KEY_BASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.app_secret.secretKeyBase.secretName | default (printf "%s-secret-key" .Values.app_name) }}
+                  name: {{ .Values.app_secret.secretKeyBase.secretName }}
                   key: {{ .Values.app_secret.secretKeyBase.secretKey | default "secret-key-base" }}
             - name: APP_HOST
               value: {{ .Values.web.binding | default "0.0.0.0" }}

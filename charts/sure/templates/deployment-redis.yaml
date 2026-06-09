@@ -33,17 +33,21 @@ spec:
         - name: {{ .Values.app_name }}-redis
           image: {{ .Values.redis.bundled.image.registry }}/{{ .Values.redis.bundled.image.repository }}:{{ .Values.redis.bundled.image.tag }}
           imagePullPolicy: IfNotPresent
-          args:
-            - "--requirepass"
-            - {{ .Values.redis.bundled.primary.password | default "" | quote }}
           ports:
             - containerPort: {{ .Values.redis.bundled.primary.port }}
               name: redis
               protocol: TCP
           env:
             - name: REDIS_PASSWORD
-              value: {{ .Values.redis.bundled.primary.password | default "" | quote }}
-          {{- if .Values.redis.bundled.primary.password }}
+              {{- if .Values.redis.passwordSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.passwordSecret }}
+                  key: {{ .Values.redis.passwordSecretKey | default "REDIS_PASSWORD" }}
+              {{- else }}
+              value: ""
+              {{- end }}
+          {{- if .Values.redis.passwordSecret }}
           livenessProbe:
             exec:
               command:

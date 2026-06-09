@@ -74,8 +74,6 @@ postgresql:
   port: 5432
   database: sure_production
   username: sure_user
-  # Reference a secret that contains the password.
-  # The secret must have a key named "password".
   passwordSecret: ""
   passwordSecretKey: "password"
   # ---- Bundled PostgreSQL (set when postgresql.external = false) ----
@@ -85,6 +83,7 @@ postgresql:
       repository: library/postgres
       tag: "16"
     primary:
+      host: "{{ .Values.app_name }}-postgresql"
       persistence:
         enabled: true
         size: 10Gi
@@ -103,6 +102,8 @@ redis:
   external: false
   # ---- External Redis (set when redis.external = true) ----
   url: ""
+  passwordSecret: ""
+  passwordSecretKey: "REDIS_PASSWORD"
   # ---- Bundled Redis (set when redis.external = false and redis.bundled.enabled = true) ----
   bundled:
     enabled: true
@@ -111,8 +112,8 @@ redis:
       repository: library/redis
       tag: "7"
     primary:
+      host: "{{ .Values.app_name }}-redis"
       port: 6379
-      password: ""
       persistence:
         enabled: true
         size: 1Gi

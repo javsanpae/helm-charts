@@ -8,9 +8,9 @@ metadata:
     app.kubernetes.io/name: {{ .Values.app_name }}
 spec:
   schedule: {{ .Values.backup.schedule | quote }}
-  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
-  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
-  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy | default "Forbid" }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit | default 1 }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit | default 3 }}
   jobTemplate:
     spec:
       template:
@@ -18,42 +18,42 @@ spec:
           restartPolicy: Never
           containers:
             - name: backup
-              image: {{ .Values.backup.image }}
+              image: {{ .Values.backup.image.registry }}/{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}
               imagePullPolicy: IfNotPresent
               env:
                 - name: PGPASSWORD
                   valueFrom:
                     secretKeyRef:
-                      name: {{ .Values.backup.passwordSecret | default (printf "%s-backup-db" .Values.app_name) }}
-                      key: {{ .Values.backup.passwordSecretKey | default "POSTGRES_PASSWORD" }}
+                      name: {{ .Values.backup.passwordSecret }}
+                      key: {{ .Values.backup.passwordSecretKey | default "password" }}
                 - name: PGHOST
-                  value: {{ .Values.postgresql.bundled.primary.host }}
+                  value: {{ .Values.backup.postgresHost | default .Values.postgresql.host }}
                 - name: PGPORT
-                  value: "5432"
+                  value: {{ .Values.postgresql.port | quote }}
                 - name: PGUSER
                   value: {{ .Values.postgresql.username }}
                 - name: PGDATABASE
-                  value: {{ .Values.postgresql.database }}
+                  value: {{ .Values.backup.postgresDatabase | default .Values.postgresql.database }}
                 - name: PGHOST_AUTH_METHOD
                   value: "scram-sha-256"
                 - name: BACKUP_DIR
-                  value: {{ .Values.backup.mountPath }}
+                  value: {{ .Values.backup.mountPath | default "/backups" }}
               volumeMounts:
                 - name: backup-volume
-                  mountPath: {{ .Values.backup.mountPath }}
+                  mountPath: {{ .Values.backup.mountPath | default "/backups" }}
               command:
                 - /bin/sh
                 - -c
                 - |
                   TIMESTAMP=$(date +%Y%m%d%H%M%S)
-                  BACKUP_FILE="${BACKUP_DIR}/${PGDATABASE}_${TIMESTAMP}.sql"
+                  BACKUP_FILE="${BACKUP_DIR}/${PGDATABASE}_${TIMESTAMP}.sqlc"
                   pg_dump -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" --no-password -F c -f "$BACKUP_FILE"
                   echo "Backup completed: $BACKUP_FILE"
                   # Cleanup backups older than retention period
-                  find "$BACKUP_DIR" -name "*.sql" -type f -mtime +{{ .Values.backup.retentionDays }} -delete
+                  find "$BACKUP_DIR" -name "*.sqlc" -type f -mtime +{{ .Values.backup.retention.keepDays }} -delete
                   echo "Old backups cleaned up"
           volumes:
             - name: backup-volume
               persistentVolumeClaim:
-                claimName: {{ .Values.app_name }}-pvc
+                claimName: {{ .Values.app_name }}-backup
 {{- end }}
